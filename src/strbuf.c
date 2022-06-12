@@ -2,6 +2,7 @@
 
 #include <stdarg.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 vm_sea_strbuf_t vm_sea_strbuf_new(void)
 {
@@ -15,6 +16,27 @@ vm_sea_strbuf_t vm_sea_strbuf_new(void)
 void vm_sea_strbuf_del(vm_sea_strbuf_t buf)
 {
     free(buf.buf);
+}
+
+vm_sea_strbuf_t vm_sea_strbuf_read_file(const char *filename)
+{
+    FILE *file = fopen(filename, "r");
+    if (file == NULL)
+    {
+        return vm_sea_strbuf_new();
+    }
+    vm_sea_strbuf_t buf = vm_sea_strbuf_new();
+    while (!feof(file))
+    {
+        int n = fgetc(file);
+        if (n < 0)
+        {
+            break;
+        }
+        vm_sea_strbuf_putchar(&buf, (char) n);
+    }
+    fclose(file);
+    return buf;
 }
 
 void vm_sea_strbuf_putchar(vm_sea_strbuf_t *buf, char chr)

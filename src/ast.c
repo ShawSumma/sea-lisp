@@ -12,12 +12,13 @@ vm_sea_ast_t vm_sea_ast_call(size_t n, ...)
         args[i] = va_arg(va, vm_sea_ast_t);
     }
     va_end(va);
+    vm_sea_ast_call_t *pcall = malloc(sizeof(vm_sea_ast_call_t));
+    pcall->args = args;
+    pcall->nargs = n;
+    pcall->alloc = n;
     return (vm_sea_ast_t) {
         .type = VM_SEA_AST_TYPE_CALL,
-        .call = (vm_sea_ast_call_t) {
-            .args = args,
-            .nargs = n,
-        },
+        .call = pcall,
     };
 }
 
@@ -45,6 +46,16 @@ vm_sea_ast_t vm_sea_ast_ident(const char *str)
     };
 }
 
+void vm_sea_ast_call_add(vm_sea_ast_call_t *out, vm_sea_ast_t ast)
+{
+    if (out->nargs + 1 >= out->alloc)
+    {
+        out->alloc = (out->nargs + 1) * 2;
+        out->args = realloc(out->args, sizeof(vm_sea_ast_t) * out->alloc);
+    }
+    out->args[out->nargs++] = ast;
+}
+
 void vm_sea_ast_print_s(FILE *out, vm_sea_ast_t ast) 
 {
     switch (ast.type)
@@ -60,13 +71,13 @@ void vm_sea_ast_print_s(FILE *out, vm_sea_ast_t ast)
         break;
     case VM_SEA_AST_TYPE_CALL:
         fprintf(out, "(");
-        for (size_t i = 0; i < ast.call.nargs; i++)
+        for (size_t i = 0; i < ast.call->nargs; i++)
         {
             if (i != 0)
             {
                 fprintf(out, " ");
             }
-            vm_sea_ast_print_s(out, ast.call.args[i]);
+            vm_sea_ast_print_s(out, ast.call->args[i]);
         }
         fprintf(out, ")");
         break;
@@ -97,17 +108,17 @@ void vm_sea_ast_print_zi(FILE *out, vm_sea_ast_t ast, size_t depth)
     }
     case VM_SEA_AST_TYPE_CALL:
     {
-        if (ast.call.args[0].type == VM_SEA_AST_TYPE_IDENT)
+        if (ast.call->args[0].type == VM_SEA_AST_TYPE_IDENT)
         {
-            const char *fname = ast.call.args[0].str;
+            const char *fname = ast.call->args[0].str;
             size_t indent = strlen(fname) + 1;
             fprintf(out, "%s ", fname);
-            for (size_t i = 1; i < ast.call.nargs; i++)
+            for (size_t i = 1; i < ast.call->nargs; i++)
             {
                 if (i != 1) {
                     fprintf(out, "\n%*c", (int) (depth + indent), ' ');
                 }
-                vm_sea_ast_print_zi(out, ast.call.args[i], depth + indent);
+                vm_sea_ast_print_zi(out, ast.call->args[i], depth + indent);
             }
         }
         else
@@ -115,12 +126,12 @@ void vm_sea_ast_print_zi(FILE *out, vm_sea_ast_t ast, size_t depth)
             const char *fname = "|";
             size_t indent = strlen(fname) + 1;
             fprintf(out, "%s ", fname);
-            for (size_t i = 0; i < ast.call.nargs; i++)
+            for (size_t i = 0; i < ast.call->nargs; i++)
             {
                 if (i != 1) {
                     fprintf(out, "\n%*c", (int) (depth + indent), ' ');
                 }
-                vm_sea_ast_print_zi(out, ast.call.args[i], depth + indent);
+                vm_sea_ast_print_zi(out, ast.call->args[i], depth + indent);
             }
         }
         break;

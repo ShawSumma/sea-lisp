@@ -3,10 +3,22 @@
 #include "strbuf.h"
 #include "parse.h"
 
-int main() {
-    vm_sea_ast_print_s(stdout, vm_sea_parse("(print 10)"));
-    fprintf(stdout, "\n\n");
-    vm_sea_ast_print_z(stdout, vm_sea_parse("(print 10)"));
+int main(int argc, const char **argv) {
+    if (argc < 2)
+    {
+        fprintf(stderr, "main(): error: too few args\n");
+        return 1;
+    }
+    vm_sea_strbuf_t srcbuf = vm_sea_strbuf_read_file(argv[1]);
+    if (srcbuf.len == 0)
+    {
+        fprintf(stderr, "main(): error: no such file, or empty file: %s\n", argv[1]);
+        return 1;
+    }
+    char *srcstr = vm_sea_strbuf_to_string(&srcbuf);
+    vm_sea_ast_t ast = vm_sea_parse(srcstr);
+    free(srcstr);
+    vm_sea_ast_print_s(stdout, ast);
     fprintf(stdout, "\n");
     // const char *src = "@__entry; exit;";
     // vm_sea_strbuf_t strbuf = vm_sea_strbuf_new();
