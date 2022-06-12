@@ -101,6 +101,9 @@ void vm_sea_strbuf_printf(vm_sea_strbuf_t *buf, const char *fmt, ...)
             case 'u':
                 vm_sea_strbuf_putnum(buf, va_arg(va, size_t));
                 break;
+            case 'i':
+                vm_sea_strbuf_putnum(buf, va_arg(va, ptrdiff_t));
+                break;
             }
         }
         else
