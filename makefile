@@ -3,7 +3,7 @@ OPT ?= -O3
 LIBS := minivm
 MINIVM := ./minivm
 
-SRCS = src/seaweed.c src/strbuf.c
+SRCS = src/seaweed.c src/strbuf.c src/parse.c src/ast.c
 OBJS = $(SRCS:%.c=%.o)
 
 default: all
