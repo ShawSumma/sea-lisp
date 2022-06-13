@@ -12,10 +12,10 @@ all: bin/seaweed
 
 bin/seaweed: $(OBJS) minivm/libminivm.a
 	mkdir -p bin
-	$(CC) $(OPT) $(OBJS) -o $(@) -L$(MINIVM) $(LIBS:%=-l%)
+	$(CC) $(OPT) $(LDFLAGS) $(OBJS) -o $(@) -L$(MINIVM) $(LIBS:%=-l%)
 
 $(OBJS): $(@:%.o=%.c)
-	$(CC) $(OPT) -c $(@:%.o=%.c) -o $(@) -I$(MINIVM)
+	$(CC) $(OPT) $(CFLAGS) -c $(@:%.o=%.c) -o $(@) -I$(MINIVM)
 
 minivm/libminivm.a: minivm
 	@echo "pushd ./ > /dev/null"

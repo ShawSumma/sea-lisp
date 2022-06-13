@@ -1,5 +1,5 @@
 #if !defined(VM_SEA_HEADER_STRBUF)
-#define VM_SEA_HADER_STRBUF
+#define VM_SEA_HEADER_STRBUF
 
 #include <stddef.h>
 

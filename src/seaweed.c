@@ -19,9 +19,10 @@ int main(int argc, const char **argv) {
     char *srcstr = vm_sea_strbuf_to_string(&srcbuf);
     vm_sea_ast_t ast = vm_sea_parse(srcstr);
     free(srcstr);
-    vm_sea_ast_print_s(stdout, ast);
-    fprintf(stdout, "\n");
+    // vm_sea_ast_print_s(stdout, ast);
+    // fprintf(stdout, "\n");
     char *asmstr = vm_sea_lower(ast);
+    vm_sea_ast_del(ast);
     vm_asm_buf_t bcbuf = vm_asm(asmstr);
     free(asmstr);
     if (bcbuf.nops == 0) {
@@ -29,6 +30,7 @@ int main(int argc, const char **argv) {
         return 1;
     }
     int res = vm_run_arch_int(bcbuf.nops, bcbuf.ops);
+    free(bcbuf.ops);
     if (res) {
         fprintf(stderr, "vm_run_arch_int(): error #%i\n", res);
         return 1;

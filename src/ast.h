@@ -14,6 +14,7 @@ typedef struct vm_sea_ast_call_t vm_sea_ast_call_t;
 
 enum vm_sea_ast_type_t
 {
+    VM_SEA_AST_TYPE_KEYWORD,
     VM_SEA_AST_TYPE_NUMBER,
     VM_SEA_AST_TYPE_IDENT,
     VM_SEA_AST_TYPE_STRING,
@@ -34,14 +35,17 @@ struct vm_sea_ast_t
     {
         ptrdiff_t num;
         const char *str;
-        vm_sea_ast_call_t *call;
+        vm_sea_ast_call_t call;
     };
 };
+
+void vm_sea_ast_del(vm_sea_ast_t ast);
 
 vm_sea_ast_t vm_sea_ast_call(size_t n, ...);
 vm_sea_ast_t vm_sea_ast_num(ptrdiff_t n);
 vm_sea_ast_t vm_sea_ast_str(const char *str);
 vm_sea_ast_t vm_sea_ast_ident(const char *str);
+vm_sea_ast_t vm_sea_ast_keyword(const char *str);
 
 void vm_sea_ast_call_add(vm_sea_ast_call_t *out, vm_sea_ast_t ast);
 

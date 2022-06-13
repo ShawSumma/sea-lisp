@@ -25,12 +25,13 @@ size_t vm_sea_parse_strip(const char **psrc)
 
 vm_sea_ast_t vm_sea_parse(const char *src)
 {
-    vm_sea_ast_t indents[256];
-    indents[0] = vm_sea_ast_call(1, vm_sea_ast_ident("do"));
+    vm_sea_ast_t ret = vm_sea_ast_call(1, vm_sea_ast_keyword("do"));
+    vm_sea_ast_t *indents[256];
+    indents[0] = &ret;
     while (*src != '\0')
     {
         size_t indent = vm_sea_parse_strip(&src);
-        vm_sea_ast_t cur = indents[indent];
+        vm_sea_ast_call_t *cur = &indents[indent]->call;
         if (*src == '\0')
         {
             break;
@@ -46,7 +47,7 @@ vm_sea_ast_t vm_sea_parse(const char *src)
                     n += *src - '0';
                     src += 1;
                 }
-                vm_sea_ast_call_add(cur.call, vm_sea_ast_num(n));
+                vm_sea_ast_call_add(cur, vm_sea_ast_num(n));
                 break;
             }
             else
@@ -74,25 +75,25 @@ vm_sea_ast_t vm_sea_parse(const char *src)
                 {
                     indent += slen + spaces;
                     vm_sea_ast_t tree = vm_sea_ast_call(0);
-                    indents[indent] = tree;
-                    vm_sea_ast_call_add(cur.call, tree);
-                    cur = tree;
+                    vm_sea_ast_call_add(cur, tree);
+                    indents[indent] = &cur->args[cur->nargs - 1];
+                    cur = &indents[indent]->call;
                 }
                 else if (spaces == 0)
                 {
-                    vm_sea_ast_call_add(cur.call, vm_sea_ast_ident(dupd));
+                    vm_sea_ast_call_add(cur, vm_sea_ast_ident(dupd));
                     break;
                 }
                 else
                 {
                     indent += slen + spaces;
                     vm_sea_ast_t tree = vm_sea_ast_call(1, vm_sea_ast_ident(dupd));
-                    indents[indent] = tree;
-                    vm_sea_ast_call_add(cur.call, tree);
-                    cur = tree;
+                    vm_sea_ast_call_add(cur, tree);
+                    indents[indent] = &cur->args[cur->nargs - 1];
+                    cur = &indents[indent]->call;
                 }
             }
         }
     }
-    return indents[0];
+    return ret;
 }

@@ -3,6 +3,22 @@
 #include <string.h>
 #include <stdarg.h>
 
+void vm_sea_ast_del(vm_sea_ast_t ast)
+{
+    if (ast.type == VM_SEA_AST_TYPE_CALL)
+    {
+        for (size_t i = 0; i < ast.call.nargs; i++)
+        {
+            vm_sea_ast_del(ast.call.args[i]);
+        }
+        free(ast.call.args);
+    }
+    if (ast.type == VM_SEA_AST_TYPE_STRING || ast.type == VM_SEA_AST_TYPE_IDENT)
+    {
+        free((void*) ast.str);
+    }
+}
+
 vm_sea_ast_t vm_sea_ast_call(size_t n, ...)
 {
     va_list va;
@@ -12,13 +28,13 @@ vm_sea_ast_t vm_sea_ast_call(size_t n, ...)
         args[i] = va_arg(va, vm_sea_ast_t);
     }
     va_end(va);
-    vm_sea_ast_call_t *pcall = malloc(sizeof(vm_sea_ast_call_t));
-    pcall->args = args;
-    pcall->nargs = n;
-    pcall->alloc = n;
     return (vm_sea_ast_t) {
         .type = VM_SEA_AST_TYPE_CALL,
-        .call = pcall,
+        .call = (vm_sea_ast_call_t) {
+            .args = args,
+            .nargs = n,
+            .alloc = n,
+        },
     };
 }
 
@@ -46,6 +62,14 @@ vm_sea_ast_t vm_sea_ast_ident(const char *str)
     };
 }
 
+vm_sea_ast_t vm_sea_ast_keyword(const char *str)
+{
+    return (vm_sea_ast_t) {
+        .type = VM_SEA_AST_TYPE_KEYWORD,
+        .str = str,
+    };
+}
+
 void vm_sea_ast_call_add(vm_sea_ast_call_t *out, vm_sea_ast_t ast)
 {
     if (out->nargs + 1 >= out->alloc)
@@ -63,6 +87,7 @@ void vm_sea_ast_print_s(FILE *out, vm_sea_ast_t ast)
     case VM_SEA_AST_TYPE_NUMBER:
         fprintf(out, "%zi", ast.num);
         break;
+    case VM_SEA_AST_TYPE_KEYWORD:
     case VM_SEA_AST_TYPE_IDENT:
         fprintf(out, "%s", ast.str);
         break;
@@ -71,13 +96,13 @@ void vm_sea_ast_print_s(FILE *out, vm_sea_ast_t ast)
         break;
     case VM_SEA_AST_TYPE_CALL:
         fprintf(out, "(");
-        for (size_t i = 0; i < ast.call->nargs; i++)
+        for (size_t i = 0; i < ast.call.nargs; i++)
         {
             if (i != 0)
             {
                 fprintf(out, " ");
             }
-            vm_sea_ast_print_s(out, ast.call->args[i]);
+            vm_sea_ast_print_s(out, ast.call.args[i]);
         }
         fprintf(out, ")");
         break;
@@ -96,6 +121,7 @@ void vm_sea_ast_print_zi(FILE *out, vm_sea_ast_t ast, size_t depth)
         fprintf(out, "%zi", ast.num);
         break;
     }
+    case VM_SEA_AST_TYPE_KEYWORD:
     case VM_SEA_AST_TYPE_IDENT:
     {
         fprintf(out, "%s", ast.str);
@@ -108,17 +134,17 @@ void vm_sea_ast_print_zi(FILE *out, vm_sea_ast_t ast, size_t depth)
     }
     case VM_SEA_AST_TYPE_CALL:
     {
-        if (ast.call->args[0].type == VM_SEA_AST_TYPE_IDENT)
+        if (ast.call.args[0].type == VM_SEA_AST_TYPE_IDENT)
         {
-            const char *fname = ast.call->args[0].str;
+            const char *fname = ast.call.args[0].str;
             size_t indent = strlen(fname) + 1;
             fprintf(out, "%s ", fname);
-            for (size_t i = 1; i < ast.call->nargs; i++)
+            for (size_t i = 1; i < ast.call.nargs; i++)
             {
                 if (i != 1) {
                     fprintf(out, "\n%*c", (int) (depth + indent), ' ');
                 }
-                vm_sea_ast_print_zi(out, ast.call->args[i], depth + indent);
+                vm_sea_ast_print_zi(out, ast.call.args[i], depth + indent);
             }
         }
         else
@@ -126,12 +152,12 @@ void vm_sea_ast_print_zi(FILE *out, vm_sea_ast_t ast, size_t depth)
             const char *fname = "|";
             size_t indent = strlen(fname) + 1;
             fprintf(out, "%s ", fname);
-            for (size_t i = 0; i < ast.call->nargs; i++)
+            for (size_t i = 0; i < ast.call.nargs; i++)
             {
                 if (i != 1) {
                     fprintf(out, "\n%*c", (int) (depth + indent), ' ');
                 }
-                vm_sea_ast_print_zi(out, ast.call->args[i], depth + indent);
+                vm_sea_ast_print_zi(out, ast.call.args[i], depth + indent);
             }
         }
         break;
