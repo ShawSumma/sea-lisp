@@ -32,7 +32,7 @@ int main(int argc, const char **argv) {
     int res = vm_run_arch_int(bcbuf.nops, bcbuf.ops);
     free(bcbuf.ops);
     if (res) {
-        fprintf(stderr, "vm_run_arch_int(): error #%i\n", res);
+        fprintf(stderr, "vm_run_arch_int(): error #%i\n", (int) res);
         return 1;
     }
     return 0;

@@ -107,7 +107,7 @@ void vm_sea_ast_print_s(FILE *out, vm_sea_ast_t ast)
         fprintf(out, ")");
         break;
     default:
-        fprintf(out, "[type=%i]", ast.type);
+        fprintf(out, "[type=%i]", (int) ast.type);
         break;
     }
 }
@@ -164,7 +164,7 @@ void vm_sea_ast_print_zi(FILE *out, vm_sea_ast_t ast, size_t depth)
     }
     default:
     {
-        fprintf(out, "[type=%i]", ast.type);
+        fprintf(out, "[type=%i]", (int) ast.type);
         break;
     }
     }

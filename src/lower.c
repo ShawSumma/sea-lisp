@@ -84,6 +84,10 @@ vm_sea_lower_res_t vm_sea_lower_state(vm_sea_lower_t *state, vm_sea_ast_t ast)
         }
         __builtin_trap();
     }
+    default:
+    {
+        __builtin_trap();
+    }
     }
 }
 
