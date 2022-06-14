@@ -4,9 +4,6 @@
 #include "parse.h"
 #include "strbuf.h"
 
-#include <stdint.h>
-#include <stdbool.h>
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -14,25 +11,6 @@
 
 #include <unistd.h>
 #include <termios.h>
-
-struct vm_sea_edit_print_state_t;
-typedef struct vm_sea_edit_print_state_t vm_sea_edit_print_state_t;
-
-struct vm_sea_edit_query_t;
-typedef struct vm_sea_edit_query_t vm_sea_edit_query_t;
-
-struct vm_sea_edit_query_t
-{
-    uint8_t path[128];
-    size_t len;
-};
-
-struct vm_sea_edit_print_state_t 
-{
-    vm_sea_edit_query_t cur;
-    vm_sea_edit_query_t query;
-    size_t hole;
-};
 
 bool vm_sea_edit_query_equal(vm_sea_edit_query_t a, vm_sea_edit_query_t b)
 {
@@ -70,7 +48,7 @@ void vm_sea_edit_print_zi(vm_sea_ast_t ast, vm_sea_edit_print_state_t *state, si
     {
         fprintf(stdout, "\x1b[1m");
     }
-    switch(ast.type)
+    switch (ast.type)
     {
     case VM_SEA_AST_TYPE_NUMBER:
     {
@@ -81,6 +59,10 @@ void vm_sea_edit_print_zi(vm_sea_ast_t ast, vm_sea_edit_print_state_t *state, si
     case VM_SEA_AST_TYPE_IDENT:
     {
         fprintf(stdout, "%s", ast.str);
+        if (isselected)
+        {
+            fprintf(stdout, ":");
+        }
         break;
     }
     case VM_SEA_AST_TYPE_STRING:
@@ -94,11 +76,12 @@ void vm_sea_edit_print_zi(vm_sea_ast_t ast, vm_sea_edit_print_state_t *state, si
         {
             const char *fname = ast.call.args[0].str;
             size_t indent = strlen(fname) + 1;
-            fprintf(stdout, "%s ", fname);
+            fprintf(stdout, "%s%c", fname, isselected ? ':' : ' ');
             for (size_t i = 1; i < ast.call.nargs; i++)
             {
-                if (i != 1) {
-                    fprintf(stdout, "\r\n%*c", (int) (depth + indent), ' ');
+                if (i != 1)
+                {
+                    fprintf(stdout, "\r\n%*c", (int)(depth + indent), ' ');
                 }
                 state->cur.path[state->cur.len++] = i;
                 vm_sea_edit_print_zi(ast.call.args[i], state, depth + indent);
@@ -107,24 +90,13 @@ void vm_sea_edit_print_zi(vm_sea_ast_t ast, vm_sea_edit_print_state_t *state, si
         }
         else
         {
-            const char *fname = "|";
-            size_t indent = strlen(fname) + 1;
-            fprintf(stdout, "%s ", fname);
-            for (size_t i = 0; i < ast.call.nargs; i++)
-            {
-                if (i != 0) {
-                    fprintf(stdout, "\r\n%*c", (int) (depth + indent), ' ');
-                }
-                state->cur.path[state->cur.len++] = i + 1;
-                vm_sea_edit_print_zi(ast.call.args[i], state, depth + indent);
-                state->cur.len--;
-            }
+            fprintf(stdout, "{BAD AST}");
         }
         break;
     }
     default:
     {
-        fprintf(stdout, "[type=%i]", (int) ast.type);
+        fprintf(stdout, "[type=%i]", (int)ast.type);
         break;
     }
     }
@@ -134,17 +106,13 @@ void vm_sea_edit_print_zi(vm_sea_ast_t ast, vm_sea_edit_print_state_t *state, si
     }
 }
 
-void vm_sea_edit_print_z(vm_sea_ast_t ast)
-{
-}
-
 void vm_sea_edit_print_prog(vm_sea_ast_t prog, vm_sea_edit_query_t query)
 {
     if (prog.type != VM_SEA_AST_TYPE_CALL)
     {
         return;
     }
-    vm_sea_edit_print_state_t state = (vm_sea_edit_print_state_t) {
+    vm_sea_edit_print_state_t state = (vm_sea_edit_print_state_t){
         .hole = 1,
         .query = query,
     };
@@ -180,12 +148,86 @@ void vm_sea_edit_clear(void)
 void vm_sea_edit_redraw(vm_sea_ast_t ast, vm_sea_edit_query_t query)
 {
     vm_sea_edit_clear();
-    fprintf(stdout , "\x1b[H");
-    fprintf(stdout , "\x1b[1;1H");
+    fprintf(stdout, "\x1b[H");
+    fprintf(stdout, "\x1b[1;1H");
     vm_sea_edit_print_prog(ast, query);
     fflush(stdout);
 }
 
+int vm_sea_edit_get_key(void)
+{
+    char c;
+    read(STDIN_FILENO, &c, 1);
+    if (c == '\x1b')
+    {
+        char seq[3];
+        if (read(STDIN_FILENO, &seq[0], 1) != 1)
+            return '\x1b';
+        if (read(STDIN_FILENO, &seq[1], 1) != 1)
+            return '\x1b';
+        if (seq[0] == '[')
+        {
+            if (seq[1] >= '0' && seq[1] <= '9')
+            {
+                if (read(STDIN_FILENO, &seq[2], 1) != 1)
+                    return '\x1b';
+                if (seq[2] == '~')
+                {
+                    switch (seq[1])
+                    {
+                    case '1':
+                        return VM_SEA_EDIT_KEY_HOME;
+                    case '3':
+                        return VM_SEA_EDIT_KEY_DEL;
+                    case '4':
+                        return VM_SEA_EDIT_KEY_END;
+                    case '5':
+                        return VM_SEA_EDIT_KEY_PGUP;
+                    case '6':
+                        return VM_SEA_EDIT_KEY_PGDN;
+                    case '7':
+                        return VM_SEA_EDIT_KEY_HOME;
+                    case '8':
+                        return VM_SEA_EDIT_KEY_END;
+                    }
+                }
+            }
+            else
+            {
+                switch (seq[1])
+                {
+                case 'A':
+                    return VM_SEA_EDIT_KEY_UP;
+                case 'B':
+                    return VM_SEA_EDIT_KEY_DOWN;
+                case 'C':
+                    return VM_SEA_EDIT_KEY_RIGHT;
+                case 'D':
+                    return VM_SEA_EDIT_KEY_LEFT;
+                case 'H':
+                    return VM_SEA_EDIT_KEY_HOME;
+                case 'F':
+                    return VM_SEA_EDIT_KEY_END;
+                }
+            }
+        }
+        else if (seq[0] == 'O')
+        {
+            switch (seq[1])
+            {
+            case 'H':
+                return VM_SEA_EDIT_KEY_HOME;
+            case 'F':
+                return VM_SEA_EDIT_KEY_END;
+            }
+        }
+        return '\x1b';
+    }
+    else
+    {
+        return c;
+    }
+}
 
 void vm_sea_edit_boot(void)
 {
@@ -199,60 +241,64 @@ void vm_sea_edit_boot(void)
 
     vm_sea_edit_redraw(ast, query);
 
-    char c;
-
     for (;;)
     {
-        read(STDIN_FILENO, &c, 1);
+        int key = vm_sea_edit_get_key();
     redo:;
-        vm_sea_edit_redraw(ast, query);
-        if (c == 27)
+        if (key == VM_SEA_EDIT_KEY_LEFT)
         {
-            read(STDIN_FILENO, &c, 1);
-            if (c == '[')
+            if (query.len > 0)
             {
-                read(STDIN_FILENO, &c, 1);
-                if (c == 'D' && query.len > 0)
+                query.len -= 1;
+            }
+        }
+        else if (key == VM_SEA_EDIT_KEY_RIGHT)
+        {
+            query.path[query.len++] = 1;
+            vm_sea_ast_t *node = vm_sea_edit_query_get(query, &ast);
+            if (node == NULL)
+            {
+                query.len -= 1;
+            }
+        }
+        else if (key == VM_SEA_EDIT_KEY_UP)
+        {
+            if (query.len > 0 && query.path[query.len - 1] > 1)
+            {
+                query.path[query.len - 1] -= 1;
+            }
+            else if (query.len > 1)
+            {
+                query.len -= 1;
+                vm_sea_ast_t *parent = vm_sea_edit_query_get(query, &ast);
+                query.len += 1;
+                query.path[query.len - 1] = parent->call.nargs - 1;
+            }
+        }
+        else if (key == VM_SEA_EDIT_KEY_DOWN)
+        {
+            if (query.len > 0)
+            {
+                query.path[query.len - 1] += 1;
+                vm_sea_ast_t *node = vm_sea_edit_query_get(query, &ast);
+                if (node == NULL)
                 {
-                    query.len -= 1;
-                }
-                if (c == 'C')
-                {
-                    query.path[query.len++] = 1;
-                }
-                if (c == 'A' && query.len > 0)
-                {
-                    if (query.path[query.len - 1] > 1)
-                    {
-                        query.path[query.len - 1] -= 1;
-                    }
-                    else
-                    {
-                        query.len -= 1;
-                        vm_sea_ast_t *parent = vm_sea_edit_query_get(query, &ast);
-                        query.len += 1;
-                        query.path[query.len - 1] = parent->call.nargs - 1;
-                    }
-                }
-                if (c == 'B' && query.len > 0)
-                {
-                    query.path[query.len - 1] += 1;
-                    vm_sea_ast_t *node = vm_sea_edit_query_get(query, &ast);
-                    if (node == NULL)
-                    {
-                        query.path[query.len - 1] = 1;
-                    }
+                    query.path[query.len - 1] = 1;
                 }
             }
         }
-        else if (!iscntrl(c) && isprint(c) && c != '\n' && c != '\r' && c != ' ')
+        else if (key < 128 && isprint(key) && key != '\n' && key != '\r' && key != ' ')
         {
             size_t len = 0;
             char *name = calloc(256, sizeof(char));
-            name[len++] = c;
-            name[len+0] = '?';
-            name[len+1] = '\0';
+            name[len++] = (char) key;
+            name[len + 0] = '?';
+            name[len + 1] = '\0';
             vm_sea_ast_t *target = vm_sea_edit_query_get(query, &ast);
+            if (target == NULL)
+            {
+                goto end;
+            }
             if (target->type != VM_SEA_AST_TYPE_CALL)
             {
                 *target = vm_sea_ast_call(1, *target);
@@ -261,30 +307,45 @@ void vm_sea_edit_boot(void)
             for (;;)
             {
                 vm_sea_edit_redraw(ast, query);
-                read(STDIN_FILENO, &c, 1);
-                if (c == '\b' && len > 0)
+                int chr = vm_sea_edit_get_key();
+                if (chr == '\x7F' && len > 0)
                 {
                     len -= 1;
-                    name[len+0] = '?';
-                    name[len+1] = '\0';
+                    name[len + 0] = '?';
+                    name[len + 1] = '\0';
                 }
-                else if (c == '\n' || c == '\r' || c == 27)
+                else if (chr == '\n' || chr == '\r' || chr >= 128)
                 {
-                    name[len] = '\0';
+                    if (len == 0)
+                    {
+                        target->call.nargs -= 1;
+                    }
+                    else
+                    {
+                        name[len] = '\0';
+                    }
+                    key = chr;
                     goto redo;
                 }
-                else if (c == ' ')
+                else if (chr == ' ')
                 {
-                    name[len] = '\0';
-                    query.path[query.len++] = target->call.nargs - 1;
+                    if (len == 0)
+                    {
+                        target->call.nargs -= 1;
+                    }
+                    else
+                    {
+                        name[len] = '\0';
+                        query.path[query.len++] = target->call.nargs - 1;
+                    }
                     vm_sea_edit_redraw(ast, query);
                     goto end;
                 }
                 else
                 {
-                    name[len++] = c;
-                    name[len+0] = '?';
-                    name[len+1] = '\0';
+                    name[len++] = chr;
+                    name[len + 0] = '?';
+                    name[len + 1] = '\0';
                 }
             }
         }
