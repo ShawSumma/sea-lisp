@@ -134,7 +134,7 @@ void vm_sea_ast_print_zi(FILE *out, vm_sea_ast_t ast, size_t depth)
     }
     case VM_SEA_AST_TYPE_CALL:
     {
-        if (ast.call.args[0].type == VM_SEA_AST_TYPE_IDENT)
+        if (ast.call.args[0].type == VM_SEA_AST_TYPE_IDENT || ast.call.args[0].type == VM_SEA_AST_TYPE_KEYWORD)
         {
             const char *fname = ast.call.args[0].str;
             size_t indent = strlen(fname) + 1;
