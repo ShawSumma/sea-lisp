@@ -229,12 +229,42 @@ int vm_sea_edit_get_key(void)
     }
 }
 
+bool vm_sea_edit_isnumber(const char *src)
+{
+    while (*src != '\0')
+    {
+        if ('0' <= *src && *src <= '9')
+        {
+            src += 1;   
+        }
+        else
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
 void vm_sea_edit_boot(void)
 {
     vm_sea_edit_enter_raw_mode();
 
-    vm_sea_ast_t ast = vm_sea_parse("");
+    vm_sea_strbuf_t buf = vm_sea_strbuf_read_file("out.sea");
 
+    vm_sea_ast_t ast;
+
+    if (buf.len != 0)
+    {
+        char *src = vm_sea_strbuf_to_string(&buf);
+
+        ast = vm_sea_parse(src);
+
+        free(src);
+    }
+    else
+    {
+        ast = vm_sea_parse("");
+    }
     vm_sea_edit_query_t query = {
         .len = 0,
     };
@@ -243,6 +273,13 @@ void vm_sea_edit_boot(void)
 
     for (;;)
     {
+        FILE *out = fopen("out.sea", "w");
+        for (size_t i = 1; i < ast.call.nargs; i++)
+        {
+            vm_sea_ast_print_z(out, ast.call.args[i]);
+            fprintf(out, "\n");
+        }
+        fclose(out);
         int key = vm_sea_edit_get_key();
     redo:;
         if (key == VM_SEA_EDIT_KEY_LEFT)
@@ -308,11 +345,14 @@ void vm_sea_edit_boot(void)
             {
                 vm_sea_edit_redraw(ast, query);
                 int chr = vm_sea_edit_get_key();
-                if (chr == '\x7F' && len > 0)
+                if (chr == '\x7F')
                 {
-                    len -= 1;
-                    name[len + 0] = '?';
-                    name[len + 1] = '\0';
+                    if (len > 0)
+                    {
+                        len -= 1;
+                        name[len + 0] = '?';
+                        name[len + 1] = '\0';
+                    }
                 }
                 else if (chr == '\n' || chr == '\r' || chr >= 128)
                 {
@@ -322,7 +362,17 @@ void vm_sea_edit_boot(void)
                     }
                     else
                     {
-                        name[len] = '\0';
+                        if (vm_sea_edit_isnumber(name))
+                        {
+                            target->call.nargs -= 1;
+                            size_t n = 0;
+                            sscanf(name, "%zu", &n);
+                            vm_sea_ast_call_add(&target->call, vm_sea_ast_num(n));
+                        }
+                        else
+                        {
+                            name[len] = '\0';
+                        }
                     }
                     key = chr;
                     goto redo;
