@@ -3,13 +3,12 @@
 #include "strbuf.h"
 #include "parse.h"
 #include "lower.h"
-#include "edit.h"
 
 int main(int argc, const char **argv) {
     if (argc < 2)
     {
-        vm_sea_edit_boot();
-        return 0;
+        fprintf(stderr, "too few arguments\n");
+        return 1;
     }
     else
     {

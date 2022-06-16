@@ -42,6 +42,14 @@ vm_sea_lower_res_t vm_sea_lower_state(vm_sea_lower_t *state, vm_sea_ast_t ast)
     }
     case VM_SEA_AST_TYPE_IDENT:
     {
+        for (size_t i = 0; i < state->nlocals; i++)
+        {
+            if (!strcmp(state->locals[i].name, ast.str))
+            {
+                return state->locals[i].reg;
+            }
+        }
+        fprintf(stderr, "unknown identifier: %s\n", ast.str);
         __builtin_trap();
     }
     case VM_SEA_AST_TYPE_STRING:
@@ -81,11 +89,51 @@ vm_sea_lower_res_t vm_sea_lower_state(vm_sea_lower_t *state, vm_sea_ast_t ast)
                 }
                 return 0;
             }
+            else if (!strcmp(name, "let"))
+            {
+                size_t len0 = state->nlocals;
+                for (size_t i = 1; i < ast.call.nargs - 1; i++)
+                {
+                    vm_sea_ast_t sets = ast.call.args[i];
+                    if (sets.type == VM_SEA_AST_TYPE_CALL && sets.call.nargs == 2)
+                    {
+                        const char *name = sets.call.args[0].str;
+                        size_t varreg = vm_sea_lower_state(state, sets.call.args[1]);
+                        if (state->nlocals + 4 >= state->locals_alloc)
+                        {
+                            state->locals_alloc = (state->nlocals + 4) * 4;
+                            state->locals = realloc(state->locals, sizeof(vm_sea_lower_locals_t) * state->locals_alloc);
+                        }
+                        state->locals[state->nlocals++] = (vm_sea_lower_locals_t) {
+                            .name = name,
+                            .reg = varreg,
+                        };
+                    }
+                }
+                size_t ret = vm_sea_lower_state(state, ast.call.args[ast.call.nargs - 1]);
+                state->nlocals = len0;
+                return ret;
+            }
+            else if (!strcmp(name, "+"))
+            {
+                size_t ret = state->nregs++;
+                vm_sea_strbuf_printf(vm_sea_lower_state_buffer(state), "r%u <- int 0\n", ret);
+                for (size_t i = 1; i < ast.call.nargs; i++)
+                {
+                    size_t tmp = vm_sea_lower_state(state, ast.call.args[i]);
+                    vm_sea_strbuf_printf(vm_sea_lower_state_buffer(state), "r%u <- add r%u r%u\n", ret, ret, tmp);
+                }
+                return ret;
+            }
         }
+        vm_sea_ast_print_z(stderr, ast);
+        fprintf(stderr, "\n");
         __builtin_trap();
     }
     default:
     {
+        vm_sea_ast_print_z(stderr, ast);
+        fprintf(stderr, "\n");
         __builtin_trap();
     }
     }
@@ -119,6 +167,7 @@ char *vm_sea_lower(vm_sea_ast_t ast)
             .nbufs = 0,
             .alloc = 0,
         },
+        .locals = NULL,
         .endbuf = vm_sea_strbuf_new(),
     };
 
@@ -134,6 +183,7 @@ char *vm_sea_lower(vm_sea_ast_t ast)
     vm_sea_lower_state_pop(&state);
     
     free(state.bufs.bufs);
+    free(state.locals);
 
     return vm_sea_strbuf_to_string(&state.endbuf);
 }

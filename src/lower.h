@@ -6,6 +6,9 @@
 
 typedef size_t vm_sea_lower_res_t;
 
+struct vm_sea_lower_locals_t;
+typedef struct vm_sea_lower_locals_t vm_sea_lower_locals_t;
+
 struct vm_sea_lower_bufs_t;
 typedef struct vm_sea_lower_bufs_t vm_sea_lower_bufs_t;
 
@@ -13,6 +16,12 @@ struct vm_sea_lower_t;
 typedef struct vm_sea_lower_t vm_sea_lower_t;
 
 #include "strbuf.h"
+
+struct vm_sea_lower_locals_t
+{
+    const char *name;
+    size_t reg;
+};
 
 struct vm_sea_lower_bufs_t
 {
@@ -23,6 +32,9 @@ struct vm_sea_lower_bufs_t
 
 struct vm_sea_lower_t 
 {
+    vm_sea_lower_locals_t *locals;
+    size_t nlocals;
+    size_t locals_alloc;
     size_t nregs;
     vm_sea_lower_bufs_t bufs;
     vm_sea_strbuf_t endbuf;
