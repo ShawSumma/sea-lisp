@@ -1,0 +1,7 @@
+
+let nl 10
+    do let x 2
+           c 48
+           out + x
+                 c
+       out 10

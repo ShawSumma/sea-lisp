@@ -1,6 +1,5 @@
 OPT ?= -O3
 
-LIBS := minivm
 MINIVM := ./minivm
 
 SRCS = src/seaweed.c src/strbuf.c src/parse.c src/ast.c src/lower.c
@@ -10,24 +9,18 @@ default: all
 
 all: bin/seaweed
 
-bin/seaweed: $(OBJS) minivm/libminivm.a
+bin/seaweed: $(OBJS) minivm/bin/libminivm.a
 	mkdir -p bin
-	$(CC) $(OPT) $(LDFLAGS) $(OBJS) -o $(@) -L$(MINIVM) $(LIBS:%=-l%)
+	$(CC) $(OPT) $(LDFLAGS) $(OBJS) -o $(@) minivm/bin/libminivm.a
 
 $(OBJS): $(@:%.o=%.c)
 	$(CC) $(OPT) $(CFLAGS) -c $(@:%.o=%.c) -o $(@) -I$(MINIVM)
 
-minivm/libminivm.a: minivm
-	@echo "pushd ./ > /dev/null"
-	@echo cd $(MINIVM) 
-	@$(MAKE) --no-print-directory -C $(MINIVM) libminivm.a
-	@echo "popd > /dev/null"
+minivm/bin/libminivm.a: minivm
+	$(MAKE) --no-print-directory -C $(MINIVM) bin/libminivm.a
 
 clean: .dummy
 	rm -rf $(OBJS)
-	@echo "pushd ./ > /dev/null"
-	@echo cd $(MINIVM) 
-	@$(MAKE) --no-print-directory -C $(MINIVM) clean
-	@echo "popd > /dev/null"
+	$(MAKE) --no-print-directory -C $(MINIVM) clean
 
 .dummy:
