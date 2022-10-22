@@ -6,13 +6,11 @@
 struct vm_sea_strbuf_t;
 typedef struct vm_sea_strbuf_t vm_sea_strbuf_t;
 
-struct vm_sea_strbuf_t
-{
+struct vm_sea_strbuf_t {
     char *buf;
     size_t len;
     size_t alloc;
 };
-
 
 vm_sea_strbuf_t vm_sea_strbuf_new(void);
 void vm_sea_strbuf_del(vm_sea_strbuf_t buf);

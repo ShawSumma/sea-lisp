@@ -1,2 +1,3 @@
 let x 2
-    
+    out add 48
+            x
