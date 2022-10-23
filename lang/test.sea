@@ -1,3 +1,4 @@
-let x 2
+let x 4
     out add 48
             x
+    out 10

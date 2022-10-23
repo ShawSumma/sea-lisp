@@ -8,17 +8,17 @@ OBJS = $(SRCS:%.c=%.o)
 
 default: all
 
-all: bin/seaweed.exe
+all: bin/seaweed
 
-bin/seaweed.exe: bin/seaweed
-	cp bin/seaweed bin/seaweed.exe
-
-bin/seaweed: $(OBJS) $(MINIVM)/bin/libminivm.a
+bin/seaweed: $(OBJS) $(MINIVM)/bin/libminivm.lib
 	mkdir -p bin
-	$(CC) $(OPT) $(LDFLAGS) $(OBJS) -o $(@) $(MINIVM)/bin/libminivm.a
+	$(CC) $(OPT) $(LDFLAGS) $(OBJS) -o $(@) $(MINIVM)/bin/libminivm.lib
 
 $(OBJS): $(@:%.o=%.c)
 	$(CC) $(OPT) $(CFLAGS) -c $(@:%.o=%.c) -o $(@)
+
+$(MINIVM)/bin/libminivm.lib: minivm
+	$(MAKE) --no-print-directory -C $(MINIVM) bin/libminivm.lib
 
 $(MINIVM)/bin/libminivm.a: minivm
 	$(MAKE) --no-print-directory -C $(MINIVM) bin/libminivm.a

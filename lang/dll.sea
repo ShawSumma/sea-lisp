@@ -1,0 +1,7 @@
+let ucrt dlopen :ucrtbase.dll
+    let printf dlsym ucrt
+                     :printf
+                     &i32
+                     &ptr
+                     &ptr
+        printf "Hello, %s!" "World"

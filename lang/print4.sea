@@ -1,0 +1,17 @@
+let x 4985
+    out add 48
+            mod div x
+                    1000
+                10
+    out add 48
+            mod div x
+                    100
+                10
+    out add 48
+            mod div x
+                    10
+                10
+    out add 48
+            mod x
+                10
+    out 10

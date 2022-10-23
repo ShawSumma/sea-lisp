@@ -1,13 +1,15 @@
 #include "../minivm/vm/asm.h"
 #include "../minivm/vm/be/int3.h"
 #include "../minivm/vm/ir.h"
+#include "../minivm/vm/tag.h"
+#include "../minivm/vm/cffi.h"
 #include "lower.h"
 #include "parse.h"
 #include "strbuf.h"
 
 int main(int argc, const char **argv) {
     if (argc < 2) {
-        fprintf(stderr, "main(): too few args\n");
+        fprintf(stderr, "main(): too few args to program\n");
         return 1;
     } else {
         const char *out = NULL;

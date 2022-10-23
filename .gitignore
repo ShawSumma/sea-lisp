@@ -4,3 +4,5 @@
 bin/*
 .vscode
 out.*
+ffi
+*.dll

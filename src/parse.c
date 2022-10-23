@@ -3,7 +3,8 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
-#include <vcruntime_string.h>
+
+#include "strbuf.h"
 
 size_t vm_sea_parse_strip(const char **psrc) {
     size_t ret = 0;
@@ -49,6 +50,14 @@ vm_sea_ast_t vm_sea_parse(const char *src) {
                 }
                 vm_sea_ast_call_add(cur, vm_sea_ast_num(n));
                 break;
+            } else if (*src == ':') {
+                src += 1;
+                vm_sea_strbuf_t buf = vm_sea_strbuf_new();
+                while (*src != '\n' && *src != '\0') {
+                    vm_sea_strbuf_putchar(&buf, *src);
+                    src += 1;
+                }
+                vm_sea_ast_call_add(cur, vm_sea_ast_str(buf.buf));
             } else if (*src == '\\') {
                 src += 1;
                 vm_sea_ast_call_add(cur, vm_sea_ast_num(*src));
