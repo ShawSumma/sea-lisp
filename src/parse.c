@@ -57,7 +57,8 @@ vm_sea_ast_t vm_sea_parse(const char *src) {
                     vm_sea_strbuf_putchar(&buf, *src);
                     src += 1;
                 }
-                vm_sea_ast_call_add(cur, vm_sea_ast_str(buf.buf));
+                vm_sea_ast_call_add(cur, vm_sea_ast_str(vm_sea_strbuf_to_string(&buf)));
+                break;
             } else if (*src == '\\') {
                 src += 1;
                 vm_sea_ast_call_add(cur, vm_sea_ast_num(*src));

@@ -1,7 +1,12 @@
-let ucrt dlopen :ucrtbase.dll
-    let printf dlsym ucrt
-                     :printf
+let dll dlopen :dll.dll
+    let vm_add dlsym dll
+                     :vm_add
                      &i32
-                     &ptr
-                     &ptr
-        printf "Hello, %s!" "World"
+                     &i32
+                     &i32
+        let vm_print dlsym dll
+                           :vm_print
+                           &void
+                           &i32
+            vm_print vm_add 2
+                            2
